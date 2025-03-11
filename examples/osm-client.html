@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSM MCP Server Test</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        #map {
+            height: 500px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .tool-card {
+            flex: 1;
+            min-width: 300px;
+            background-color: #f5f7fa;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .results {
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow: auto;
+            font-size: 14px;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        .tab.active {
+            border-bottom: 3px solid #3498db;
+            font-weight: 600;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .place-card {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        .place-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .place-details {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>OSM MCP Server Test Interface</h1>
+        
+        <!-- Add transport selector -->
+        <div class="tool-card" style="margin-bottom: 20px;">
+            <h3>MCP Connection Settings</h3>
+            <div class="form-group">
+                <label for="transport-type">Transport Type:</label>
+                <select id="transport-type" onchange="updateTransport()">
+                    <option value="stdio">STDIO</option>
+                    <option value="sse">SSE</option>
+                </select>
+                <button onclick="initializeConnection()" style="margin-left: 10px;">Connect</button>
+                <span id="connection-status" style="margin-left: 10px; font-weight: bold;"></span>
+            </div>
+        </div>
+        
+        <div id="map"></div>
+        
+        <div class="panel">
+            <div class="tool-card">
+                <h3>Geocode Address</h3>
+                <div class="form-group">
+                    <label for="geocode-input">Enter an address or place name:</label>
+                    <input type="text" id="geocode-input" placeholder="e.g., Empire State Building" value="San Francisco">
+                    <button onclick="testGeocode()">Geocode</button>
+                </div>
+            </div>
+            
+            <div class="tool-card">
+                <h3>Find Nearby Places</h3>
+                <div class="form-group">
+                    <label for="nearby-lat">Latitude:</label>
+                    <input type="text" id="nearby-lat" placeholder="e.g., 37.7749">
+                    
+                    <label for="nearby-lon">Longitude:</label>
+                    <input type="text" id="nearby-lon" placeholder="e.g., -122.4194">
+                    
+                    <label for="nearby-category">Category:</label>
+                    <select id="nearby-category">
+                        <option value="amenity">Amenity</option>
+                        <option value="shop">Shop</option>
+                        <option value="tourism">Tourism</option>
+                        <option value="leisure">Leisure</option>
+                    </select>
+                    
+                    <label for="nearby-radius">Radius (meters):</label>
+                    <input type="number" id="nearby-radius" value="500" min="100" max="5000">
+                    
+                    <button onclick="testFindNearby()">Find Nearby</button>
+                </div>
+            </div>
+            
+            <div class="tool-card">
+                <h3>Route Directions</h3>
+                <div class="form-group">
+                    <label for="route-from">From:</label>
+                    <input type="text" id="route-from" placeholder="e.g., Golden Gate Bridge">
+                    
+                    <label for="route-to">To:</label>
+                    <input type="text" id="route-to" placeholder="e.g., Fisherman's Wharf">
+                    
+                    <label for="route-mode">Mode of Transport:</label>
+                    <select id="route-mode">
+                        <option value="car">Car</option>
+                        <option value="bike">Bicycle</option>
+                        <option value="foot">Walking</option>
+                    </select>
+                    
+                    <button onclick="testGetDirections()">Get Directions</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div class="tool-card">
+                <h3>Explore Area</h3>
+                <div class="form-group">
+                    <label for="explore-address">Address or Area:</label>
+                    <input type="text" id="explore-address" placeholder="e.g., Downtown Seattle">
+                    
+                    <label for="explore-radius">Radius (meters):</label>
+                    <input type="number" id="explore-radius" value="800" min="200" max="5000">
+                    
+                    <button onclick="testExploreArea()">Explore Area</button>
+                </div>
+            </div>
+            
+            <div class="tool-card">
+                <h3>Find Parking</h3>
+                <div class="form-group">
+                    <label for="parking-address">Address:</label>
+                    <input type="text" id="parking-address" placeholder="e.g., Downtown San Francisco">
+                    
+                    <label for="parking-radius">Radius (meters):</label>
+                    <input type="number" id="parking-radius" value="500" min="100" max="2000">
+                    
+                    <label for="parking-type">Parking Type:</label>
+                    <select id="parking-type">
+                        <option value="">Any</option>
+                        <option value="surface">Surface</option>
+                        <option value="underground">Underground</option>
+                        <option value="multi-storey">Multi-storey</option>
+                    </select>
+                    
+                    <button onclick="testFindParking()">Find Parking</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="results">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('json')">JSON</div>
+                <div class="tab" onclick="switchTab('visual')">Visual</div>
+            </div>
+            
+            <div id="json-tab" class="tab-content active">
+                <pre id="results-output">Results will appear here...</pre>
+            </div>
+            
+            <div id="visual-tab" class="tab-content">
+                <div id="visual-results">
+                    <p>Visual results will appear here after running a query.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Update API_BASE to use our proxy
+        const API_BASE = '/mcp';  // This will be proxied to http://localhost:3000
+        
+        // Initialize map
+        const map = L.map('map').setView([37.7749, -122.4194], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        let markers = [];
+        let routeLayer = null;
+        let sessionId = null;
+        let connected = false;
+        let messageId = 0;
+        
+        let transportType = 'stdio';
+        
+        function updateTransport() {
+            transportType = document.getElementById('transport-type').value;
+            connected = false;
+            document.getElementById('connection-status').textContent = 'Not Connected';
+            initializeConnection();
+        }
+        
+        // Helper to show loading state
+        function showLoading() {
+            document.getElementById('results-output').textContent = 'Loading...';
+            document.getElementById('visual-results').innerHTML = '<div class="loader"></div> Loading...';
+        }
+        
+        // Updated connection logic to properly handle MCP Inspector
+        async function initializeConnection() {
+            try {
+                document.getElementById('connection-status').textContent = 'Connecting...';
+                
+                // Prompt user for session ID from MCP Inspector
+                let sid = sessionStorage.getItem('mcp_session_id');
+                
+                if (!sid) {
+                    // Create instructions for the user
+                    document.getElementById('visual-results').innerHTML = `
+                        <div style="background-color: #eef8ff; padding: 15px; border-radius: 5px; border-left: 5px solid #3498db;">
+                            <h3>MCP Inspector Session Required</h3>
+                            <p>Please follow these steps:</p>
+                            <ol>
+                                <li>Make sure MCP Inspector is running with:
+                                    <pre>npx @modelcontextprotocol/inspector uv run --with mcp --with haversine --with aiohttp --with shapely --with geojson mcp run src/osm_mcp_server/server.py</pre>
+                                </li>
+                                <li>Open the <a href="http://localhost:5173" target="_blank">MCP Inspector UI</a> (localhost:5173)</li>
+                                <li>Initialize a connection in the MCP Inspector</li>
+                                <li>Copy the Session ID from the MCP Inspector</li>
+                            </ol>
+                        </div>
+                    `;
+                    
+                    sid = prompt(
+                        'Please enter the Session ID from MCP Inspector UI.\n\n' +
+                        'Copy the Session ID from the MCP Inspector UI at http://localhost:5173'
+                    );
+                    
+                    if (!sid) {
+                        throw new Error('Session ID required');
+                    }
+                    
+                    // Save in session storage
+                    sessionStorage.setItem('mcp_session_id', sid);
+                }
+                
+                sessionId = sid;
+                
+                // Verify session is valid by listing tools
+                console.log("Using session ID:", sessionId);
+                
+                try {
+                    const toolsResponse = await fetch(`${API_BASE}/message?sessionId=${sessionId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            jsonrpc: "2.0",
+                            id: messageId++,
+                            method: "tools/list",
+                            params: {}
+                        })
+                    });
+                    
+                    if (!toolsResponse.ok) {
+                        sessionStorage.removeItem('mcp_session_id');
+                        throw new Error(`Invalid session: ${toolsResponse.status} ${toolsResponse.statusText}`);
+                    }
+                    
+                    const responseText = await toolsResponse.text();
+                    let toolsData;
+                    
+                    try {
+                        toolsData = JSON.parse(responseText);
+                    } catch (e) {
+                        console.error("Failed to parse tools response:", responseText);
+                        throw new Error("Invalid response from MCP server");
+                    }
+                    
+                    console.log("Available tools:", toolsData);
+                    
+                    connected = true;
+                    document.getElementById('connection-status').textContent = 
+                        `Connected (Session: ${sessionId.slice(0,8)}...)`;
+                    
+                    // If the connection works, clear any error messages
+                    document.getElementById('visual-results').innerHTML = '<p>Connected successfully! Try running a tool.</p>';
+                        
+                    return toolsData;
+                } catch (error) {
+                    console.error("Error verifying session:", error);
+                    sessionStorage.removeItem('mcp_session_id');
+                    document.getElementById('connection-status').textContent = 'Invalid Session ID';
+                    
+                    document.getElementById('visual-results').innerHTML = `
+                        <div style="background-color: #fff5e6; padding: 15px; border-radius: 5px; border-left: 5px solid #e67e22;">
+                            <h3>Connection Error</h3>
+                            <p>Could not connect to MCP Inspector with the provided session ID.</p>
+                            <p>Error: ${error.message}</p>
+                            <p>Please make sure:</p>
+                            <ol>
+                                <li>MCP Inspector is running at http://localhost:3000</li>
+                                <li>You have initialized a session in the MCP Inspector UI</li>
+                                <li>You entered the correct session ID</li>
+                            </ol>
+                            <button onclick="initializeConnection()">Try Again</button>
+                        </div>
+                    `;
+                    
+                    throw error;
+                }
+            } catch (error) {
+                console.error('Connection failed:', error);
+                document.getElementById('connection-status').textContent = 'Connection Failed';
+                sessionId = null;
+                connected = false;
+                throw error;
+            }
+        }
+        
+        async function callMCPTool(toolName, params) {
+            if (!connected || !sessionId) {
+                await initializeConnection();
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/message?sessionId=${sessionId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        jsonrpc: "2.0",
+                        id: messageId++,
+                        method: "tools/call",
+                        params: {
+                            name: toolName,
+                            arguments: params
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Tool response:', data);
+                
+                // Check for errors
+                if (data.error) {
+                    throw new Error(data.error.message || 'Unknown error');
+                }
+                
+                // Parse result content (assuming text content with JSON)
+                if (data.result && data.result.content && data.result.content.length > 0) {
+                    for (const content of data.result.content) {
+                        if (content.type === 'text') {
+                            try {
+                                return JSON.parse(content.text);
+                            } catch (e) {
+                                console.warn('Could not parse response as JSON:', content.text);
+                                return content.text;
+                            }
+                        }
+                    }
+                }
+                
+                return data.result;
+            } catch (error) {
+                console.error('Tool call failed:', error);
+                throw error;
+            }
+        }
+        
+        // Switch between result tabs
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+        }
+        
+        // Helper function to clear markers
+        function clearMarkers() {
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            
+            if (routeLayer) {
+                map.removeLayer(routeLayer);
+                routeLayer = null;
+            }
+        }
+        
+        // Helper to create visual results
+        function createVisualResult(title, details) {
+            const card = document.createElement('div');
+            card.className = 'place-card';
+            card.innerHTML = `
+                <div class="place-name">${title}</div>
+                <div class="place-details">${details}</div>
+            `;
+            return card;
+        }
+        
+        // Test geocode function
+        async function testGeocode() {
+            const address = document.getElementById('geocode-input').value;
+            clearMarkers();
+            showLoading();
+            
+            try {
+                const data = await callMCPTool("geocode_address", {
+                    address: address
+                });
+                
+                document.getElementById('results-output').textContent = JSON.stringify(data, null, 2);
+                
+                // Update visual results
+                const visualResults = document.getElementById('visual-results');
+                visualResults.innerHTML = '';
+                
+                if (data && data.length > 0) {
+                    const place = data[0];
+                    const displayName = place.display_name || 'Unknown location';
+                    
+                    visualResults.innerHTML = `
+                        <div class="place-card">
+                            <div class="place-name">${displayName}</div>
+                            <div class="place-details">
+                                <p><strong>Coordinates:</strong> ${place.lat}, ${place.lon}</p>
+                                ${place.address ? `<p><strong>Address:</strong> ${JSON.stringify(place.address, null, 2)}</p>` : ''}
+                                <p><strong>Place ID:</strong> ${place.place_id || 'N/A'}</p>
+                                <p><strong>OSM Type:</strong> ${place.osm_type || 'N/A'}</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    visualResults.innerHTML = '<p>No results found.</p>';
+                }
+            } catch (error) {
+                document.getElementById('results-output').textContent = `Error: ${error.message}`;
+                document.getElementById('visual-results').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Test find nearby places function
+        async function testFindNearby() {
+            const lat = parseFloat(document.getElementById('nearby-lat').value);
+            const lon = parseFloat(document.getElementById('nearby-lon').value);
+            const category = document.getElementById('nearby-category').value;
+            const radius = parseInt(document.getElementById('nearby-radius').value);
+            
+            if (isNaN(lat) || isNaN(lon)) {
+                alert('Please enter valid latitude and longitude values');
+                return;
+            }
+            
+            clearMarkers();
+            showLoading();
+            
+            try {
+                const data = await callMCPTool("find_nearby_places", {
+                    latitude: lat,
+                    longitude: lon,
+                    radius: radius,
+                    categories: [category],
+                    limit: 20
+                });
+                
+                document.getElementById('results-output').textContent = JSON.stringify(data, null, 2);
+                
+                // Create a marker for the center point
+                const centerMarker = L.marker([lat, lon])
+                    .addTo(map)
+                    .bindPopup('Search center')
+                    .openPopup();
+                
+                markers.push(centerMarker);
+                
+                // Draw a circle with the radius
+                const circle = L.circle([lat, lon], {
+                    radius: radius,
+                    color: '#3498db',
+                    fillColor: '#3498db',
+                    fillOpacity: 0.1
+                }).addTo(map);
+                
+                markers.push(circle);
+                
+                // Fit the map to the circle
+                map.fitBounds(circle.getBounds());
+                
+                // Visual results
+                const visualResults = document.getElementById('visual-results');
+                visualResults.innerHTML = '';
+                
+                if (data && data.categories) {
+                    // Count the total number of places
+                    let placeCount = 0;
+                    
+                    for (const [categoryKey, subcategories] of Object.entries(data.categories)) {
+                        for (const [subcategory, places] of Object.entries(subcategories)) {
+                            if (!Array.isArray(places) || places.length === 0) continue;
+                            
+                            placeCount += places.length;
+                            
+                            places.forEach(place => {
+                                if (place.coordinates) {
+                                    const placeMarker = L.marker([place.coordinates.latitude, place.coordinates.longitude])
+                                        .addTo(map)
+                                        .bindPopup(`<b>${place.name || 'Unnamed'}</b><br>${subcategory}`);
+                                    
+                                    markers.push(placeMarker);
+                                }
+                                
+                                // Add to visual results
+                                const details = `
+                                    <p><strong>Distance:</strong> ${place.distance ? (place.distance / 1000).toFixed(2) + ' km' : 'Unknown'}</p>
+                                    ${place.address ? `<p><strong>Address:</strong> ${place.address}</p>` : ''}
+                                    ${place.opening_hours ? `<p><strong>Hours:</strong> ${place.opening_hours}</p>` : ''}
+                                `;
+                                
+                                visualResults.appendChild(createVisualResult(place.name || 'Unnamed Place', details));
+                                
+                                // Limit the number of visual results
+                                if (visualResults.children.length >= 15) return;
+                            });
+                        }
+                    }
+                    
+                    if (placeCount === 0) {
+                        visualResults.innerHTML = '<p>No places found in this area</p>';
+                    }
+                } else {
+                    visualResults.innerHTML = '<p>No places found in this area</p>';
+                }
+            } catch (error) {
+                document.getElementById('results-output').textContent = `Error: ${error.message}`;
+                document.getElementById('visual-results').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Test get directions function
+        async function testGetDirections() {
+            const from = document.getElementById('route-from').value;
+            const to = document.getElementById('route-to').value;
+            const mode = document.getElementById('route-mode').value;
+            
+            clearMarkers();
+            showLoading();
+            
+            try {
+                // First geocode both locations
+                const [fromData, toData] = await Promise.all([
+                    callMCPTool("geocode_address", { address: from }),
+                    callMCPTool("geocode_address", { address: to })
+                ]);
+                
+                if (!fromData.length || !toData.length) {
+                    throw new Error('Could not geocode one or both locations');
+                }
+                
+                // Get directions
+                const routeData = await callMCPTool("get_route_directions", {
+                    from_latitude: parseFloat(fromData[0].lat),
+                    from_longitude: parseFloat(fromData[0].lon),
+                    to_latitude: parseFloat(toData[0].lat),
+                    to_longitude: parseFloat(toData[0].lon),
+                    mode: mode
+                });
+                
+                document.getElementById('results-output').textContent = JSON.stringify(routeData, null, 2);
+                
+                // Visual results
+                const visualResults = document.getElementById('visual-results');
+                visualResults.innerHTML = '';
+                
+                // Add markers for start and end points
+                const startMarker = L.marker([parseFloat(fromData[0].lat), parseFloat(fromData[0].lon)])
+                    .addTo(map)
+                    .bindPopup(`<b>Start:</b> ${fromData[0].display_name}`)
+                    .openPopup();
+                
+                const endMarker = L.marker([parseFloat(toData[0].lat), parseFloat(toData[0].lon)])
+                    .addTo(map)
+                    .bindPopup(`<b>End:</b> ${toData[0].display_name}`);
+                
+                markers.push(startMarker, endMarker);
+                
+                // Draw route if available
+                if (routeData && routeData.route && routeData.route.geometry) {
+                    const routeGeometry = routeData.route.geometry.coordinates;
+                    const latLngs = routeGeometry.map(coord => [coord[1], coord[0]]);
+                    
+                    routeLayer = L.polyline(latLngs, {
+                        color: '#3498db',
+                        weight: 5,
+                        opacity: 0.7
+                    }).addTo(map);
+                    
+                    // Fit the map to the route
+                    map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
+                    
+                    // Display route information
+                    const summary = routeData.summary;
+                    const distanceKm = (summary.distance / 1000).toFixed(2);
+                    const durationMin = (summary.duration / 60).toFixed(1);
+                    
+                    visualResults.innerHTML = `
+                        <h3>Route from ${fromData[0].display_name} to ${toData[0].display_name}</h3>
+                        <div class="place-card">
+                            <div class="place-name">Summary</div>
+                            <div class="place-details">
+                                <p><strong>Distance:</strong> ${distanceKm} km</p>
+                                <p><strong>Duration:</strong> ${durationMin} minutes</p>
+                                <p><strong>Mode:</strong> ${mode}</p>
+                            </div>
+                        </div>
+                        <h4>Directions</h4>
+                    `;
+                    
+                    // Display turn-by-turn directions
+                    routeData.directions.forEach((step, index) => {
+                        visualResults.appendChild(createVisualResult(
+                            `Step ${index + 1}`,
+                            `<p>${step.instruction}</p>${step.distance ? `<p>${(step.distance / 1000).toFixed(2)} km</p>` : ''}`
+                        ));
+                    });
+                } else {
+                    visualResults.innerHTML = '<p>Could not retrieve route directions</p>';
+                }
+            } catch (error) {
+                document.getElementById('results-output').textContent = `Error: ${error.message}`;
+                document.getElementById('visual-results').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Test explore area function
+        async function testExploreArea() {
+            const address = document.getElementById('explore-address').value;
+            const radius = parseInt(document.getElementById('explore-radius').value);
+            
+            clearMarkers();
+            showLoading();
+            
+            try {
+                // First geocode the address
+                const geocodeData = await callMCPTool("geocode_address", {
+                    address: address
+                });
+                
+                if (!geocodeData || !geocodeData.length) {
+                    throw new Error('Could not geocode the location');
+                }
+                
+                const lat = parseFloat(geocodeData[0].lat);
+                const lon = parseFloat(geocodeData[0].lon);
+                
+                // Explore the area
+                const exploreData = await callMCPTool("explore_area", {
+                    latitude: lat,
+                    longitude: lon,
+                    radius: radius
+                });
+                
+                document.getElementById('results-output').textContent = JSON.stringify(exploreData, null, 2);
+                
+                // Create a marker for the center point
+                const centerMarker = L.marker([lat, lon])
+                    .addTo(map)
+                    .bindPopup(geocodeData[0].display_name)
+                    .openPopup();
+                
+                markers.push(centerMarker);
+                
+                // Draw a circle with the radius
+                const circle = L.circle([lat, lon], {
+                    radius: radius,
+                    color: '#3498db',
+                    fillColor: '#3498db',
+                    fillOpacity: 0.1
+                }).addTo(map);
+                
+                markers.push(circle);
+                
+                // Fit the map to the circle
+                map.fitBounds(circle.getBounds());
+                
+                // Visual results
+                const visualResults = document.getElementById('visual-results');
+                visualResults.innerHTML = `
+                    <h3>Area Summary: ${geocodeData[0].display_name}</h3>
+                    <p><strong>Total Features:</strong> ${exploreData.total_features || 0}</p>
+                `;
+                
+                // Display category counts
+                if (exploreData && exploreData.categories) {
+                    for (const [category, subcategories] of Object.entries(exploreData.categories)) {
+                        if (!subcategories) continue;
+                        
+                        // Count total features in this category
+                        let categoryCount = 0;
+                        for (const places of Object.values(subcategories)) {
+                            if (Array.isArray(places)) {
+                                categoryCount += places.length;
+                            }
+                        }
+                        
+                        if (categoryCount > 0) {
+                            const categoryCard = document.createElement('div');
+                            categoryCard.className = 'place-card';
+                            categoryCard.innerHTML = `
+                                <div class="place-name">${category.charAt(0).toUpperCase() + category.slice(1)}</div>
+                                <div class="place-details">
+                                    <p><strong>Count:</strong> ${categoryCount}</p>
+                                </div>
+                            `;
+                            visualResults.appendChild(categoryCard);
+                        }
+                    }
+                }
+            } catch (error) {
+                document.getElementById('results-output').textContent = `Error: ${error.message}`;
+                document.getElementById('visual-results').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Test find parking function
+        async function testFindParking() {
+            const address = document.getElementById('parking-address').value;
+            const radius = parseInt(document.getElementById('parking-radius').value);
+            const parkingType = document.getElementById('parking-type').value;
+            
+            clearMarkers();
+            showLoading();
+            
+            try {
+                // First geocode the address
+                const geocodeData = await callMCPTool("geocode_address", {
+                    address: address
+                });
+                
+                if (!geocodeData || !geocodeData.length) {
+                    throw new Error('Could not geocode the location');
+                }
+                
+                const lat = parseFloat(geocodeData[0].lat);
+                const lon = parseFloat(geocodeData[0].lon);
+                
+                // Find parking facilities
+                const params = {
+                    latitude: lat,
+                    longitude: lon,
+                    radius: radius
+                };
+                
+                if (parkingType) {
+                    params.parking_type = parkingType;
+                }
+                
+                const parkingData = await callMCPTool("find_parking_facilities", params);
+                
+                document.getElementById('results-output').textContent = JSON.stringify(parkingData, null, 2);
+                
+                // Create a marker for the center point
+                const centerMarker = L.marker([lat, lon])
+                    .addTo(map)
+                    .bindPopup(geocodeData[0].display_name)
+                    .openPopup();
+                
+                markers.push(centerMarker);
+                
+                // Draw a circle with the radius
+                const circle = L.circle([lat, lon], {
+                    radius: radius,
+                    color: '#3498db',
+                    fillColor: '#3498db',
+                    fillOpacity: 0.1
+                }).addTo(map);
+                
+                markers.push(circle);
+                
+                // Fit the map to the circle
+                map.fitBounds(circle.getBounds());
+                
+                // Visual results
+                const visualResults = document.getElementById('visual-results');
+                visualResults.innerHTML = `
+                    <h3>Parking near ${geocodeData[0].display_name}</h3>
+                    <p><strong>Facilities found:</strong> ${parkingData.facilities ? parkingData.facilities.length : 0}</p>
+                `;
+                
+                // Add markers and details for each parking facility
+                if (parkingData && parkingData.facilities && parkingData.facilities.length > 0) {
+                    parkingData.facilities.forEach(facility => {
+                        if (facility.coordinates) {
+                            // Custom parking icon
+                            const parkingIcon = L.divIcon({
+                                html: '<span style="background-color: #3498db; color: white; padding: 3px 6px; border-radius: 3px; font-weight: bold;">P</span>',
+                                className: 'parking-icon',
+                                iconSize: [20, 20]
+                            });
+                            
+                            const facilityMarker = L.marker(
+                                [facility.coordinates.latitude, facility.coordinates.longitude],
+                                { icon: parkingIcon }
+                            )
+                            .addTo(map)
+                            .bindPopup(`
+                                <b>${facility.name || 'Parking'}</b><br>
+                                Type: ${facility.type || 'Unknown'}<br>
+                                Fee: ${facility.fee === 'yes' ? 'Paid' : facility.fee === 'no' ? 'Free' : 'Unknown'}
+                            `);
+                            
+                            markers.push(facilityMarker);
+                        }
+                        
+                        // Add to visual results
+                        const details = `
+                            <p><strong>Type:</strong> ${facility.type || 'Unknown'}</p>
+                            <p><strong>Distance:</strong> ${facility.distance ? (facility.distance / 1000).toFixed(2) + ' km' : 'Unknown'}</p>
+                            <p><strong>Fee:</strong> ${facility.fee === 'yes' ? 'Paid' : facility.fee === 'no' ? 'Free' : 'Unknown'}</p>
+                            ${facility.capacity ? `<p><strong>Capacity:</strong> ${facility.capacity} spaces</p>` : ''}
+                            ${facility.operator ? `<p><strong>Operator:</strong> ${facility.operator}</p>` : ''}
+                        `;
+                        
+                        visualResults.appendChild(createVisualResult(facility.name || 'Unnamed Parking', details));
+                    });
+                } else {
+                    visualResults.innerHTML += '<p>No parking facilities found in this area</p>';
+                }
+            } catch (error) {
+                document.getElementById('results-output').textContent = `Error: ${error.message}`;
+                document.getElementById('visual-results').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Initialize page with defaults
+        document.addEventListener('DOMContentLoaded', () => {
+            // Attempt to populate default coordinates
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    document.getElementById('nearby-lat').value = position.coords.latitude.toFixed(6);
+                    document.getElementById('nearby-lon').value = position.coords.longitude.toFixed(6);
+                },
+                function(error) {
+                    // Default to San Francisco if geolocation fails
+                    document.getElementById('nearby-lat').value = "37.7749";
+                    document.getElementById('nearby-lon').value = "-122.4194";
+                }
+            );
+            
+            // Set default connection status
+            document.getElementById('connection-status').textContent = 'Not Connected';
+            
+            // Auto-initialize connection
+            initializeConnection();
+        });
+    </script>
+</body>
+</html>

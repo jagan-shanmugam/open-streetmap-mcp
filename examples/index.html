@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSM MCP Server Tools</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        .card {
+            background-color: #f5f7fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .btn {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        code {
+            background-color: #f8f9fa;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .steps {
+            background-color: #eef8ff;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid #3498db;
+        }
+        .warning {
+            background-color: #fff5e6;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid #e67e22;
+        }
+    </style>
+</head>
+<body>
+    <h1>OSM MCP Server Tools</h1>
+    
+    <div class="card">
+        <h2>1. Start the MCP Inspector</h2>
+        <p>The MCP Inspector is needed to connect to the OSM MCP Server. Run this command in your terminal:</p>
+        <pre><code>npx @modelcontextprotocol/inspector uv run --with mcp --with haversine --with aiohttp --with shapely --with geojson mcp run src/osm_mcp_server/server.py</code></pre>
+        
+        <div class="steps">
+            <p><strong>After running the above command:</strong></p>
+            <ol>
+                <li>The MCP Inspector proxy server will start on port 3000</li>
+                <li>The MCP Inspector web client will be available at port 5173</li>
+            </ol>
+        </div>
+        
+        <a href="http://localhost:5173" target="_blank" class="btn">Open MCP Inspector Web Client</a>
+    </div>
+    
+    <div class="card">
+        <h2>2. Open the OSM Client Visualization</h2>
+        <p>Once the MCP Inspector is running, you can use our visualization client:</p>
+        
+        <div class="warning">
+            <p><strong>Important:</strong> Make sure the MCP Inspector is running before opening the OSM client.</p>
+        </div>
+        
+        <a href="osm-client.html" class="btn">Open OSM Client</a>
+    </div>
+    
+    <div class="card">
+        <h2>How It Works</h2>
+        <p>This setup uses two key components:</p>
+        <ol>
+            <li><strong>MCP Inspector:</strong> Connects to the OSM MCP Server and provides a way to call its tools.</li>
+            <li><strong>OSM Client:</strong> Our visualization tool that uses the MCP Server's capabilities to display maps, directions, and other location-based information.</li>
+        </ol>
+        <p>You can use both tools together to explore and visualize OpenStreetMap data.</p>
+    </div>
+</body>
+</html> 
