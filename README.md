@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/jagan-shanmugam-open-streetmap-mcp-badge.png)](https://mseep.ai/app/jagan-shanmugam-open-streetmap-mcp)
+
 # OpenStreetMap (OSM) MCP Server
 
 An OpenStreetMap MCP server implementation that enhances LLM capabilities with location-based services and geospatial data.
