@@ -2,6 +2,10 @@
 
 An OpenStreetMap MCP server implementation that enhances LLM capabilities with location-based services and geospatial data.
 
+<a href="https://glama.ai/mcp/servers/@jagan-shanmugam/open-streetmap-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@jagan-shanmugam/open-streetmap-mcp/badge" alt="OpenStreetMap Server MCP server" />
+</a>
+
 ## Demo
 
 ### Meeting Point Optimization
@@ -12,7 +16,6 @@ An OpenStreetMap MCP server implementation that enhances LLM capabilities with l
 
 ### Parking Search
 ![Parking Search Use Case](demo/use-case-parking.gif)
-
 
 ## Installation
 
@@ -70,7 +73,6 @@ The server implements several geospatial tools:
 - `find_ev_charging_stations`: Locate EV charging infrastructure with filtering
 - `analyze_neighborhood`: Evaluate neighborhood livability for real estate
 - `find_parking_facilities`: Locate parking options near a destination
-
 
 ## Local Testing
 
@@ -168,8 +170,6 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
   ```
 </details>
 
-
-
 ## Development
 
 ### Building and Publishing
@@ -207,7 +207,3 @@ npx @modelcontextprotocol/inspector uv --directory /path/to/osm-mcp-server run o
 ```
 
 Upon launching, the Inspector will display a URL that you can access in your browser to begin debugging.
-
-
-
-
