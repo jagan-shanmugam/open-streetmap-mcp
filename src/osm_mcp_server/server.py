@@ -152,7 +152,7 @@ class OSMClient:
         overpass_url = "https://overpass-api.de/api/interpreter"
         
         # Build query for specified category and subcategories
-        if subcategories:
+        if subcategories and len(subcategories) > 0:
             # Use regex pattern for subcategories
             subcategory_pattern = "|".join(subcategories)
             query_filter = f'"{category}"~"^({subcategory_pattern})$"'
