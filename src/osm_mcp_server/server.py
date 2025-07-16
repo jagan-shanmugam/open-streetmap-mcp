@@ -154,7 +154,7 @@ class OSMClient:
         # Build query for specified category and subcategories
         if subcategories:
             subcategory_filters = " or ".join([f'"{category}"="{sub}"' for sub in subcategories])
-            query_filter = f'({subcategory_filters})'
+            query_filter = f'{subcategory_filters}'
         else:
             query_filter = f'"{category}"'
         
@@ -864,7 +864,7 @@ async def find_schools_nearby(
     out body;
     """
     
-    query = query.replace("{bbox}", f"{bbox[1]},{bbox[0]},{bbox[3]},{bbox[2]}")
+    query = query.replace("{{bbox}}", f"{bbox[1]},{bbox[0]},{bbox[3]},{bbox[2]}")
     
     async with aiohttp.ClientSession() as session:
         async with session.post(overpass_url, data={"data": query}) as response:
