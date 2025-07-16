@@ -864,7 +864,7 @@ async def find_schools_nearby(
     out body;
     """
     
-    query = query.replace("{bbox}", f"{bbox[1]},{bbox[0]},{bbox[3]},{bbox[2]}")
+    query = query.replace("{{bbox}}", f"{bbox[1]},{bbox[0]},{bbox[3]},{bbox[2]}")
     
     async with aiohttp.ClientSession() as session:
         async with session.post(overpass_url, data={"data": query}) as response:
