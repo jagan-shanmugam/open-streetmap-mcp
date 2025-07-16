@@ -154,7 +154,7 @@ class OSMClient:
         # Build query for specified category and subcategories
         if subcategories:
             subcategory_filters = " or ".join([f'"{category}"="{sub}"' for sub in subcategories])
-            query_filter = f'({subcategory_filters})'
+            query_filter = f'{subcategory_filters}'
         else:
             query_filter = f'"{category}"'
         
