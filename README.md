@@ -1,5 +1,6 @@
 # OpenStreetMap (OSM) MCP Server
 
+[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/jagan-shanmugam/open-streetmap-mcp)](https://archestra.ai/mcp-catalog/jagan-shanmugam__open-streetmap-mcp)
 An OpenStreetMap MCP server implementation that enhances LLM capabilities with location-based services and geospatial data.
 
 ## Demo
