@@ -1,4 +1,4 @@
-from mcp.server.fastmcp import FastMCP, Context
+from fastmcp import FastMCP, Context
 from dataclasses import dataclass
 from typing import AsyncIterator, List, Dict, Optional, Tuple, Any, Union
 import aiohttp
@@ -1596,4 +1596,16 @@ async def find_parking_facilities(
     }
 
 if __name__ == "__main__":
-    mcp.run()
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="OpenStreetMap MCP Server")
+    parser.add_argument("--transport", default="stdio", choices=["stdio", "sse", "http"], help="Transport type (default: stdio)")
+    parser.add_argument("--host", default="0.0.0.0", help="Host for HTTP transport (default: 0.0.0.0)")
+    parser.add_argument("--port", type=int, default=8000, help="Port for HTTP transport (default: 8000)")
+    
+    args = parser.parse_args()
+    
+    if args.transport == "stdio":
+        mcp.run(transport="stdio")
+    else:
+        mcp.run(transport=args.transport, host=args.host, port=args.port)
