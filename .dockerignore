@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+.venv
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation and examples (not needed in container)
+# Note: README.md is required by pyproject.toml
+examples/
+demo/
+.github/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/

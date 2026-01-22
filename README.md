@@ -30,6 +30,35 @@ An OpenStreetMap MCP server implementation that enhances LLM capabilities with l
   }
   ```
 
+### Docker
+
+The server can be run in a Docker container with HTTP transport support:
+
+```bash
+# Build the image
+docker build -t osm-mcp-server .
+
+# Run the container (default port 8000)
+docker run -p 8000:8000 osm-mcp-server
+
+# Run with custom port via environment variable
+docker run -p 3004:3004 -e PORT=3004 osm-mcp-server
+```
+
+The Docker image uses an entrypoint script that reads the `PORT` environment variable (default: 8000) and starts the server with HTTP transport on `0.0.0.0`.
+
+For Docker Compose integration:
+
+```yaml
+services:
+  osm-mcp-server:
+    build: .
+    ports:
+      - "3004:3004"
+    environment:
+      PORT: 3004
+```
+
 ## Features
 
 This server provides LLMs with tools to interact with OpenStreetMap data, enabling location-based applications to:
