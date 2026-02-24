@@ -8,6 +8,13 @@ from typing import Any, AsyncIterator, Dict, List, Optional, Tuple, Union
 
 import aiohttp
 from mcp.server.fastmcp import Context, FastMCP
+from pydantic import BaseModel
+
+
+class LocationInput(BaseModel):
+    """A geographic location with latitude and longitude."""
+    latitude: float
+    longitude: float
 
 
 class OSMClient:
@@ -785,7 +792,7 @@ async def search_category(
 
 @mcp.tool()
 async def suggest_meeting_point(
-    locations: List[Dict[str, float]], ctx: Context, venue_type: str = "cafe"
+    locations: List[LocationInput], ctx: Context, venue_type: str = "cafe"
 ) -> Dict[str, Any]:
     """
     Find the optimal meeting place for multiple people coming from different locations.
@@ -796,7 +803,7 @@ async def suggest_meeting_point(
     starting points.
 
     Args:
-        locations: List of dictionaries, each containing the latitude and longitude of a person's location
+        locations: List of locations, each containing the latitude and longitude of a person's location
                   Example: [{"latitude": 37.7749, "longitude": -122.4194}, {"latitude": 37.3352, "longitude": -121.8811}]
         venue_type: Type of venue to suggest as a meeting point. Options include:
                    "cafe", "restaurant", "bar", "library", "park", etc.
@@ -813,8 +820,8 @@ async def suggest_meeting_point(
         raise ValueError("Need at least two locations to suggest a meeting point")
 
     # Calculate the center point (simple average)
-    avg_lat = sum(loc.get("latitude", 0) for loc in locations) / len(locations)
-    avg_lon = sum(loc.get("longitude", 0) for loc in locations) / len(locations)
+    avg_lat = sum(loc.latitude for loc in locations) / len(locations)
+    avg_lon = sum(loc.longitude for loc in locations) / len(locations)
 
     ctx.info(
         f"Calculating center point for {len(locations)} locations: ({avg_lat}, {avg_lon})"
