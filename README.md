@@ -30,6 +30,10 @@ An OpenStreetMap MCP server implementation that enhances LLM capabilities with l
   }
   ```
 
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/jagan-shanmugam-open-streetmap-mcp).
+
 ## Features
 
 This server provides LLMs with tools to interact with OpenStreetMap data, enabling location-based applications to:
